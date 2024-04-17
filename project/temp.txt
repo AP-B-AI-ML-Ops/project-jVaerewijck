@@ -1,0 +1,2 @@
+https://www.kaggle.com/datasets/murderaccountability/homicide-reports
+kaggle datasets download -d murderaccountability/homicide-reports
