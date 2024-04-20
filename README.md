@@ -1,4 +1,4 @@
-# Describe your project
+# Describe your project (unfinished)
 ## Datasets
 I will primarily be using the Homicide Reports, 1980-2014 dataset. I can also get extra data from the Homicides database. Both of these are on kaggle.
 ## Project Explanation
