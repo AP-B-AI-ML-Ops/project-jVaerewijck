@@ -12,3 +12,6 @@ boto3
 optuna
 threadpoolctl
 botocore
+keras
+tensorflow
+geopy

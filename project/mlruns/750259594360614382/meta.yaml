@@ -1,0 +1,6 @@
+artifact_location: file:///workspaces/project-jVaerewijck/project/mlruns/750259594360614382
+creation_time: 1716833643063
+experiment_id: '750259594360614382'
+last_update_time: 1716833643063
+lifecycle_stage: active
+name: keras-LSTM
