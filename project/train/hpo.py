@@ -9,6 +9,7 @@ from sklearn.preprocessing import StandardScaler
 from keras.models import Sequential
 from keras.layers import LSTM, Dense
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.callbacks import EarlyStopping
 import tensorflow as tf
 
 @task
@@ -44,22 +45,14 @@ def create_model(trial,input_shape):
     model.compile(optimizer=optimizer, loss='mse')
     return model
 
-@task
-def objective(trial,X_train, y_train, X_val, y_val,X,sequence_length):
-    input_shape=(sequence_length, X.shape[2])
-    model = create_model(trial,input_shape)
-    
-    history = model.fit(X_train, y_train, epochs=10, validation_data=(X_val, y_val), verbose=0)
-    val_loss = history.history['val_loss'][-1]
-    
-    return val_loss
 @task 
-def optimize(X,sequence_length,X_train, y_train,X_val, y_val, num_trials):
-    def objective(trail):
+def optimize(X,sequence_length,X_train, y_train,X_val, y_val, num_trials,epochs):
+    def objective(trial):
         input_shape=(sequence_length, X.shape[2])
         n_units = trial.suggest_int('n_units', 32, 128)
         dropout_rate = trial.suggest_float('dropout_rate', 0.0, 0.5)
         learning_rate = trial.suggest_loguniform('learning_rate', 1e-5, 1e-2)
+        early_stopping = EarlyStopping(monitor='val_loss', patience=2, verbose=1, mode='min', restore_best_weights=False)
         with mlflow.start_run():
             model = Sequential()
             model.add(LSTM(n_units, activation='relu', input_shape=input_shape))
@@ -68,17 +61,19 @@ def optimize(X,sequence_length,X_train, y_train,X_val, y_val, num_trials):
             optimizer = Adam(learning_rate=learning_rate)
             model.compile(optimizer=optimizer, loss='mse')
             
-            history = model.fit(X_train, y_train, epochs=10, validation_data=(X_val, y_val), verbose=0)
+            history = model.fit(X_train, y_train, epochs=epochs, validation_data=(X_val, y_val), verbose=0, callbacks=[early_stopping])
             val_loss = history.history['val_loss'][-1]
+
             mlflow.log_params(trial.params)
             mlflow.log_metric("val_loss", val_loss)
+            
         return val_loss
     sampler = TPESampler(seed=42)
     study = optuna.create_study(direction="minimize", sampler=sampler)
     study.optimize(objective, n_trials=num_trials)
     
 @flow
-def hpo_flow(data_path: str, num_trials: int, experiment_name:str):
+def hpo_flow(data_path: str, num_trials: int, experiment_name:str,epochs:int):
     mlflow.set_experiment(experiment_name)
     mlflow.sklearn.autolog()
 
@@ -90,4 +85,4 @@ def hpo_flow(data_path: str, num_trials: int, experiment_name:str):
     split = int(len(X) * split_ratio)
     X_train, X_test = X[:split], X[split:]
     y_train, y_test = y[:split], y[split:]
-    optimize(X,sequence_length,X_train, y_train,X_test, y_test, num_trials)
+    optimize(X,sequence_length,X_train, y_train,X_test, y_test, num_trials,epochs)

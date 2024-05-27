@@ -5,12 +5,12 @@ import pandas as pd
 import numpy as np
 
 
-run_id = ""
+run_id = "41da613d33154f84b20793aa13157d35"
 model_name = "LSTM-best-model"
 model_version = None  # Use None to load the latest version of the model
 data_path = "./models/"
 
-model = mlflow.keras.load_model(f"runs:/{run_id}/model/{model_name}")
+model = mlflow.pyfunc.load_model(f"models:/LSTM-best-model/latest")
 def load_pickle(filename: str):
     with open(filename, "rb") as f_in:
         return pickle.load(f_in)
@@ -42,7 +42,8 @@ def predict_next_situation(model, last_known_data, scaler, sequence_length, colu
     next_prediction_df = inverse_transform_categorical(next_prediction_df, columns, encoders)
     return next_prediction_df
 sequence_length = 5
-
+data = load_pickle(os.path.join(data_path, "data.pkl"))
+last_known_data = data.iloc[-1]
 # Predict the next situation
 next_situation = predict_next_situation(model, last_known_data, scaler, sequence_length, columns, encoders)
 

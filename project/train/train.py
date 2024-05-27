@@ -42,12 +42,12 @@ def create_model(X,sequence_length):
     return model
 
 @task
-def start_ml_experiment(model,X_train, y_train):
+def start_ml_experiment(model,X_train, y_train,epochs):
     with mlflow.start_run():
-        model.fit(X_train, y_train, epochs=50, batch_size=32, verbose=1)
+        model.fit(X_train, y_train, epochs=epochs, batch_size=32, verbose=1)
 
 @flow
-def train_flow(data_path: str):
+def train_flow(data_path: str,epochs:int):
     mlflow.set_experiment("keras-LSTM")
     mlflow.sklearn.autolog()
 
@@ -61,4 +61,4 @@ def train_flow(data_path: str):
     X_train, X_test = X[:split], X[split:]
     y_train, y_test = y[:split], y[split:]
     model = create_model(X,sequence_length)
-    start_ml_experiment(model,X_train, y_train)
+    start_ml_experiment(model,X_train, y_train,epochs)

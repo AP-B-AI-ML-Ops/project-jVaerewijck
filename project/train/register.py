@@ -11,6 +11,7 @@ from sklearn.preprocessing import StandardScaler
 from keras.models import Sequential
 from keras.layers import LSTM, Dense
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.callbacks import EarlyStopping
 import tensorflow as tf
 
 @task
@@ -34,21 +35,22 @@ def create_sequences(data, sequence_length):
     return np.array(sequences), np.array(targets)
 
 @task
-def train_and_log_model(X,sequence_length,X_train, y_train,X_val, y_val, params):
+def train_and_log_model(epochs,X,sequence_length,X_train, y_train,X_val, y_val, params):
     RF_PARAMS = ['n_units', 'dropout_rate', 'learning_rate']
+    n_units = int(params['n_units'])
+    dropout_rate = float(params['dropout_rate'])
+    learning_rate = float(params['learning_rate'])
     input_shape=(sequence_length, X.shape[2])
+    early_stopping = EarlyStopping(monitor='val_loss', patience=2, verbose=1, mode='min', restore_best_weights=False)
     with mlflow.start_run():
-        for param in RF_PARAMS:
-            params[param] = int(params[param])
-
         model = Sequential()
-        model.add(LSTM(params['n_units'], activation='relu', input_shape=input_shape))
-        model.add(tf.keras.layers.Dropout(params['dropout_rate']))
+        model.add(LSTM(n_units, activation='relu', input_shape=input_shape))
+        model.add(tf.keras.layers.Dropout(dropout_rate))
         model.add(Dense(X.shape[2]))
-        optimizer = Adam(learning_rate=params['learning_rate'])
+        optimizer = Adam(learning_rate=learning_rate)
         model.compile(optimizer=optimizer, loss='mse')
         
-        history = model.fit(X_train, y_train, epochs=10, validation_data=(X_val, y_val), verbose=0)
+        history = model.fit(X_train, y_train, epochs=epochs, validation_data=(X_val, y_val), verbose=0, callbacks=[early_stopping])
         val_loss = history.history['val_loss'][-1]
         # Evaluate model on the validation and test sets
         mlflow.log_metric("test_loss", val_loss)
@@ -80,7 +82,7 @@ def select_best_model(top_n,experiment_name):
     return best_run
 
 @flow
-def register_flow(model_path: str, top_n: int, experiment_name:str,hpo_experiment_name):
+def register_flow(model_path: str, top_n: int, experiment_name:str,hpo_experiment_name,epochs:int):
     mlflow.set_experiment(experiment_name)
     mlflow.sklearn.autolog()
     
@@ -94,10 +96,10 @@ def register_flow(model_path: str, top_n: int, experiment_name:str,hpo_experimen
     y_train, y_test = y[:split], y[split:]
     runs = get_experiment_runs(top_n,hpo_experiment_name)
     for run in runs:
-        train_and_log_model(X,sequence_length,X_train, y_train,X_test, y_test,params=run.data.params)
+        train_and_log_model(epochs,X,sequence_length,X_train, y_train,X_test, y_test,params=run.data.params)
     best_run = select_best_model(top_n,experiment_name)
     # Register the best model
     run_id = best_run.info.run_id
     model_uri = f"runs:/{run_id}/model"
-    mlflow.keras.register_model(model_uri, name="LSTM-best-model")
+    mlflow.register_model(model_uri, name="LSTM-best-model")
     print(run_id)
