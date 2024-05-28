@@ -23,7 +23,10 @@
 				"rangav.vscode-thunder-client"
 			]
 		}
-	}
+	},
+	"postCreateCommand": "sudo cp .devcontainer/start-grafana.sh /usr/local/bin/start-grafana.sh && sudo chmod +x /usr/local/bin/start-grafana.sh && /usr/local/bin/start-grafana.sh",
+    "forwardPorts": [3000],
+    "remoteUser": "vscode"
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},

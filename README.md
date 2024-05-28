@@ -1,4 +1,11 @@
 # Describe your project
+# Table of Contents
+
+1. [Datasets](#datasets)
+2. [Project Explanation](##project-explanation)
+3. [Flows & Actions](#flows-&-actions)
+4. [Training](#training)
+5. [Predicting](#predicting)
 ## Datasets
 I will primarily be using the Homicide Reports, 1980-2014 dataset. I can also get extra data from the Homicides database. Both of these are on kaggle.
 ## Project Explanation
