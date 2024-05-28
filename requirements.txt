@@ -15,4 +15,3 @@ botocore
 keras
 tensorflow
 geopy
-evidently
